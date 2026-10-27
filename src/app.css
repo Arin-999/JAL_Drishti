@@ -1,0 +1,107 @@
+body {
+    margin: 0;
+    overflow: hidden;
+    background-color: #ffffff;
+    color: #000000;
+}
+        #canvas-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 1;
+        }
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 10;
+            pointer-events: none;
+        }
+        .dashboard {
+            pointer-events: auto;
+            backdrop-filter: blur(12px);
+            border-left: 1px solid rgba(0, 102, 255, 0.2);
+            box-shadow: -10px 0 30px rgba(0, 0, 0, 0.05);
+            background: linear-gradient(90deg, rgba(245,248,255,0.9) 0%, rgba(255,255,255,0.98) 100%);
+        }
+        .hologram-panel {
+            position: absolute;
+            transform: translate(-50%, -50%);
+            background: rgba(255, 255, 255, 0.85);
+            border: 1px solid #0066ff;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 12px;
+            font-weight: 700;
+            color: #000000;
+            backdrop-filter: blur(4px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            transition: all 0.1s ease-out;
+            clip-path: polygon(0 10px, 10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%);
+        }
+        .hologram-panel::after {
+            content: '';
+            position: absolute;
+            bottom: -20px;
+            left: 50%;
+            width: 2px;
+            height: 20px;
+            background: #0066ff;
+        }
+        .gauge-ring {
+            stroke-dasharray: 100;
+            stroke-dashoffset: 20;
+            transition: stroke-dashoffset 0.5s ease;
+        }
+        
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.05); }
+        ::-webkit-scrollbar-thumb { background: #0066ff; border-radius: 3px; }
+
+        .glitch-effect {
+            animation: glitch 2s linear infinite;
+        }
+        @keyframes glitch {
+            2%, 64% { transform: translate(1px, 0) skew(0deg); }
+            4%, 60% { transform: translate(-1px, 0) skew(0deg); }
+            62% { transform: translate(0, 0) skew(2deg); }
+        }
+        
+        .high-contrast-label {
+            text-shadow: 1px 1px 0px #fff, -1px -1px 0px #fff, 1px -1px 0px #fff, -1px 1px 0px #fff;
+        }
+
+        @media (max-width: 760px) {
+            #ui-layer {
+                display: block;
+            }
+
+            #ui-layer > .p-6 {
+                padding: 1rem;
+            }
+
+            #ui-layer > .p-6 h1 {
+                font-size: clamp(1.25rem, 6vw, 2rem);
+            }
+
+            #ui-layer .dashboard {
+                position: absolute;
+                right: 0;
+                bottom: 0;
+                left: 0;
+                width: 100% !important;
+                max-width: 100% !important;
+                height: min(72dvh, 640px);
+                border-top: 1px solid rgba(0, 102, 255, 0.2);
+                border-left: 0;
+            }
+
+            .hologram-panel {
+                display: none !important;
+            }
+        }

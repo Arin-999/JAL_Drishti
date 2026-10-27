@@ -1,0 +1,25 @@
+name: Bug report
+description: Report a reproducible software or documentation issue.
+body:
+  - type: markdown
+    attributes:
+      value: Do not include personal data, credentials, or real water-sample details.
+  - type: textarea
+    id: summary
+    attributes:
+      label: What happened?
+      description: Describe the observed behavior and expected behavior.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Browser, OS, or board/core version
+    validations:
+      required: true

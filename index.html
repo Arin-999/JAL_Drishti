@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AquaSentinel WB | Water Incident Simulator</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Rajdhani:wght@300;500;700;600;700&display=swap" rel="stylesheet">
+    
+    <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        orbitron: ['Orbitron', 'sans-serif'],
+                        rajdhani: ['Rajdhani', 'sans-serif'],
+                    },
+                    colors: {
+                        cyber: {
+                            cyan: '#0066ff',
+                            blue: '#0044cc',
+                            dark: '#ffffff',
+                            panel: 'rgba(255, 255, 255, 0.9)',
+                            alert: '#d90000',
+                            safe: '#009933',
+                            warn: '#cc8800'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+
+    <link rel="stylesheet" href="./src/app.css">
+</head>
+<body class="font-rajdhani text-gray-900 antialiased">
+
+    <div id="canvas-container"></div>
+
+    <div id="ui-layer" class="flex justify-between w-full h-full relative">
+        <div class="p-6 pointer-events-auto">
+            <h1 class="text-4xl font-orbitron font-black text-blue-800 tracking-wider">AQUA-NET TWIN v3.0</h1>
+            <p class="text-sm text-gray-600 font-mono mt-1 font-bold">WEST BENGAL WATER QUALITY INCIDENT SIMULATOR</p>
+            <div class="mt-4 flex flex-wrap items-center gap-2">
+                <span class="font-mono font-black tracking-widest text-xs text-amber-800 bg-amber-100 border border-amber-300 px-3 py-2 rounded">SIMULATION MODE • NOT LIVE DATA</span>
+                <span class="font-mono font-bold text-gray-600 text-xs">No sensor or cloud connection claimed</span>
+                <span id="simulation-status" role="status" aria-live="polite" class="font-mono font-bold text-gray-600 text-xs">Loading demo modules…</span>
+            </div>
+        </div>
+
+        <div id="holo-temp" class="hologram-panel text-black border-blue-600">TEMP: 28.5°C</div>
+        <div id="holo-tds" class="hologram-panel text-black border-blue-600">TDS: 425 ppm</div>
+        <div id="holo-ph" class="hologram-panel text-black border-blue-600">pH: 7.20</div>
+        <div id="holo-turbidity" class="hologram-panel text-black border-blue-600">TURB: 8 NTU</div>
+        <div id="holo-esp" class="hologram-panel !border-amber-600 !text-amber-800">ESP32 • NOT CONNECTED</div>
+        <div id="holo-cloud" class="hologram-panel !border-gray-500 !text-gray-700">CLOUD • NOT CONNECTED</div>
+
+        <div class="dashboard w-[420px] h-full flex flex-col p-6 overflow-y-auto z-50">
+            <div class="flex justify-between items-center mb-6 border-b border-gray-300 pb-3">
+                <h2 class="text-xl font-orbitron font-bold text-black">AQUASENTINEL WB</h2>
+                <div id="timestamp" class="font-mono text-xs text-blue-800 font-bold bg-blue-100 px-2 py-1 rounded">00:00:00</div>
+            </div>
+
+            <div class="bg-white border border-gray-200 shadow-sm rounded-lg p-4 mb-4 relative overflow-hidden">
+                <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-blue-500 to-transparent opacity-50"></div>
+                <h3 class="text-sm text-gray-500 font-orbitron font-bold mb-2">ILLUSTRATIVE DEMO SCORE • NOT A WATER-QUALITY INDEX</h3>
+                <div class="flex items-end justify-between">
+                    <div class="text-6xl font-orbitron font-black text-blue-600" id="wqi-value">92</div>
+                    <div class="text-right">
+                        <div id="wqi-status" class="text-sm font-black text-red-700">INVESTIGATION FLAG • DEMO</div>
+                        <div class="text-xs text-gray-500 font-mono font-bold">Synthetic heuristic only; not a safety verdict</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white border border-gray-200 shadow-sm rounded-lg p-4 mb-4">
+                <h3 class="text-sm text-gray-500 font-orbitron font-bold mb-3 flex items-center gap-2">
+                    <svg class="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>
+                    DEMO HEURISTIC • SENSOR CONTRIBUTIONS
+                </h3>
+                <div class="space-y-3" id="xai-bars-container"></div>
+                <div class="mt-3 bg-gray-50 p-2 rounded border border-gray-100">
+                    <p id="xai-summary" class="text-xs text-gray-700 font-mono font-bold leading-tight"></p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4 mb-4">
+                <div class="bg-white border border-gray-200 shadow-sm rounded-lg p-3 flex flex-col items-center relative">
+                    <span class="text-xs text-gray-500 font-orbitron font-bold absolute top-2 left-2">TEMP</span>
+                    <svg class="w-20 h-20 transform -rotate-90 mt-2" viewBox="0 0 36 36">
+                        <path class="text-gray-200" stroke-width="4" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                        <path id="gauge-temp" class="text-orange-500 gauge-ring" stroke-dasharray="100, 100" stroke-dashoffset="40" stroke-width="4" stroke="currentColor" fill="none" stroke-linecap="round" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                    </svg>
+                    <div class="absolute inset-0 flex flex-col items-center justify-center pt-3">
+                        <span id="dash-temp" class="font-orbitron font-bold text-xl text-black">28.5</span>
+                        <span class="text-[10px] font-bold text-gray-500">°C</span>
+                    </div>
+                </div>
+                <div class="bg-white border border-gray-200 shadow-sm rounded-lg p-3 flex flex-col items-center relative">
+                    <span class="text-xs text-gray-500 font-orbitron font-bold absolute top-2 left-2">pH</span>
+                    <svg class="w-20 h-20 transform -rotate-90 mt-2" viewBox="0 0 36 36">
+                        <path class="text-gray-200" stroke-width="4" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                        <path id="gauge-ph" class="text-green-600 gauge-ring" stroke-dasharray="100, 100" stroke-dashoffset="50" stroke-width="4" stroke="currentColor" fill="none" stroke-linecap="round" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                    </svg>
+                    <div class="absolute inset-0 flex flex-col items-center justify-center pt-3">
+                        <span id="dash-ph" class="font-orbitron font-bold text-xl text-black">7.20</span>
+                        <span class="text-[10px] font-bold text-gray-500">Scale</span>
+                    </div>
+                </div>
+                <div class="bg-white border border-gray-200 shadow-sm rounded-lg p-3 flex flex-col items-center relative">
+                    <span class="text-xs text-gray-500 font-orbitron font-bold absolute top-2 left-2">TDS</span>
+                    <svg class="w-20 h-20 transform -rotate-90 mt-2" viewBox="0 0 36 36">
+                        <path class="text-gray-200" stroke-width="4" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                        <path id="gauge-tds" class="text-purple-600 gauge-ring" stroke-dasharray="100, 100" stroke-dashoffset="60" stroke-width="4" stroke="currentColor" fill="none" stroke-linecap="round" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                    </svg>
+                    <div class="absolute inset-0 flex flex-col items-center justify-center pt-3">
+                        <span id="dash-tds" class="font-orbitron font-bold text-xl text-black">425</span>
+                        <span class="text-[10px] font-bold text-gray-500">ppm</span>
+                    </div>
+                </div>
+                <div class="bg-white border border-gray-200 shadow-sm rounded-lg p-3 flex flex-col items-center relative">
+                    <span class="text-xs text-gray-500 font-orbitron font-bold absolute top-2 left-2">TURB</span>
+                    <svg class="w-20 h-20 transform -rotate-90 mt-2" viewBox="0 0 36 36">
+                        <path class="text-gray-200" stroke-width="4" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                        <path id="gauge-turb" class="text-blue-600 gauge-ring" stroke-dasharray="100, 100" stroke-dashoffset="90" stroke-width="4" stroke="currentColor" fill="none" stroke-linecap="round" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                    </svg>
+                    <div class="absolute inset-0 flex flex-col items-center justify-center pt-3">
+                        <span id="dash-turbidity" class="font-orbitron font-bold text-xl text-black">8.0</span>
+                        <span class="text-[10px] font-bold text-gray-500">NTU</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white border border-gray-200 shadow-sm rounded-lg p-4 mb-4">
+                <h3 class="text-sm text-gray-500 font-orbitron font-bold mb-2">SIMULATED TELEMETRY</h3>
+                <div class="h-32 w-full">
+                    <canvas id="telemetryChart"></canvas>
+                </div>
+            </div>
+
+            <section class="bg-amber-50 border border-amber-300 shadow-sm rounded-lg p-4 mb-4" aria-labelledby="incident-title">
+                <div class="flex items-start justify-between gap-2 mb-2">
+                    <div>
+                        <p class="text-[10px] uppercase tracking-widest font-black text-amber-800">West Bengal • Demonstration scenario</p>
+                        <h3 id="incident-title" class="text-sm font-orbitron font-black text-gray-900">Turbidity threshold exceeded</h3>
+                    </div>
+                    <span class="text-[10px] font-black px-2 py-1 rounded bg-amber-200 text-amber-900">SIMULATED</span>
+                </div>
+                <div class="grid grid-cols-2 gap-3 my-3">
+                    <div class="bg-white rounded p-3 border border-amber-200"><p class="text-[10px] uppercase font-bold text-gray-500">Demo turbidity</p><p class="text-2xl font-orbitron font-black text-red-700"><span id="incident-turbidity">18.4</span> <span class="text-xs">NTU</span></p></div>
+                    <div class="bg-white rounded p-3 border border-amber-200"><p class="text-[10px] uppercase font-bold text-gray-500">Demo trigger</p><p class="text-xl font-orbitron font-black text-gray-800">&gt; 5 NTU</p><p class="text-[9px] text-gray-500">Illustrative setting only</p></div>
+                </div>
+                <div class="rounded border-l-4 border-red-500 bg-white p-3 mb-3">
+                    <p class="text-[10px] font-black uppercase tracking-wide text-red-700">Operational status</p>
+                    <p id="incident-status" class="text-sm font-black text-gray-900">INVESTIGATION REQUIRED</p>
+                    <p id="incident-explanation" class="text-xs text-gray-700 mt-1">Simulated turbidity is above the demo trigger. This is an investigation flag, not a drinking-water safety verdict.</p>
+                </div>
+                <p class="text-[10px] uppercase font-black tracking-wide text-gray-600 mb-1">Recommended response workflow</p>
+                <ol class="list-decimal pl-4 text-xs text-gray-800 space-y-1 mb-3">
+                    <li>Verify the reading and inspect/clean the sensor as appropriate.</li>
+                    <li>Collect a confirmatory sample using the local water-quality protocol.</li>
+                    <li>Send the sample to an authorised laboratory; review other relevant parameters.</li>
+                    <li>Notify the responsible water operator/local authority and log the response.</li>
+                </ol>
+                <div class="flex gap-2">
+                    <button id="run-turbidity-scenario" type="button" class="flex-1 rounded bg-red-700 hover:bg-red-800 text-white text-xs font-black px-3 py-2">Run scenario</button>
+                    <button id="reset-simulation" type="button" class="rounded border border-gray-400 bg-white hover:bg-gray-50 text-gray-800 text-xs font-black px-3 py-2">Reset baseline</button>
+                </div>
+                <p class="mt-3 text-[10px] leading-snug text-gray-600">Important: the pH/TDS/turbidity/temperature demo does not measure arsenic, fluoride, iron or pathogens. Turbidity alone cannot certify water as safe or unsafe.</p>
+            </section>
+
+            <div class="bg-white border border-gray-200 shadow-sm rounded-lg p-4 mb-4 flex-grow">
+                <h3 class="text-sm text-gray-500 font-orbitron font-bold mb-3">SIMULATED SYSTEM EVENTS</h3>
+                <div id="alerts-container" class="flex flex-col gap-2 font-mono text-xs font-bold">
+                    <div class="p-2 bg-amber-50 border-l-4 border-amber-500 text-amber-900">
+                        [DEMO] Simulation only. No live sensor data received.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.150.1/build/three.module.js",
+          "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.150.1/examples/jsm/"
+        }
+      }
+    </script>
+
+        <script type="module">
+            import('./src/app.js').catch((error) => {
+                const status = document.getElementById('simulation-status');
+                status.textContent = 'Demo unavailable. Check network access and browser console.';
+                status.className = 'font-mono font-bold text-red-700 text-xs';
+                console.error('AquaSentinel demo initialization failed:', error);
+            });
+        </script>
+</body>
+</html>

@@ -1,0 +1,23 @@
+name: Feature request
+description: Propose a scoped improvement to the prototype.
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem to solve
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed change
+      description: Include validation, safety, and hardware assumptions where relevant.
+    validations:
+      required: true
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Safety and data
+      options:
+        - label: This request does not present demo values as field measurements or safety certification.
+          required: true
